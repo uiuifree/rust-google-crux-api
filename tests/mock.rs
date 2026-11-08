@@ -203,3 +203,24 @@ fn passes_ignores_missing_inp() {
     let empty = google_crux_api::Record::default();
     assert_eq!(empty.core_web_vitals().passes(), None);
 }
+
+#[tokio::test]
+async fn sends_quota_project() {
+    let server = MockServer::start_async().await;
+    let mock = server
+        .mock_async(|when, then| {
+            when.method(POST)
+                .path("/records:queryRecord")
+                .query_param("key", "k")
+                .header("x-goog-user-project", "my-project");
+            then.status(200).body(RECORD);
+        })
+        .await;
+    let api = CruxApi::with_api_key("k")
+        .with_quota_project("my-project")
+        .with_base_url(server.base_url());
+    api.query_record(&QueryRecordRequest::origin("https://example.com"))
+        .await
+        .unwrap();
+    mock.assert_async().await;
+}

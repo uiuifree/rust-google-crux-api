@@ -6,7 +6,7 @@ Crate name: `google-crux-api` (import as `google_crux_api`). MSRV 1.88, Tokio, r
 
 Public items:
 
-- `CruxApi::{with_api_key, with_access_token, with_client, with_base_url}`; `query_record(&QueryRecordRequest) -> Result<QueryRecordResponse, GoogleApiError>`; `query_history_record(&QueryHistoryRequest) -> Result<QueryHistoryResponse, GoogleApiError>`; `_raw` variants return `serde_json::Value`
+- `CruxApi::{with_api_key, with_access_token, with_quota_project, with_client, with_base_url}`; `query_record(&QueryRecordRequest) -> Result<QueryRecordResponse, GoogleApiError>`; `query_history_record(&QueryHistoryRequest) -> Result<QueryHistoryResponse, GoogleApiError>`; `_raw` variants return `serde_json::Value`
 - `QueryRecordRequest::{origin(..), url(..), new(Target)}` with `.form_factor(FormFactor)`, `.effective_connection_type(..)`, `.metric(..)`, `.metrics(..)`
 - `QueryHistoryRequest::{origin(..), url(..), new(Target)}` with `.form_factor(..)`, `.metric(..)`, `.metrics(..)`, `.collection_period_count(1..=40)`
 - `FormFactor::{Phone, Desktop, Tablet, AllFormFactors}`; `EffectiveConnectionType::{FourG, ThreeG, TwoG, Slow2G, Offline}`; `Target::{Origin, Url}`

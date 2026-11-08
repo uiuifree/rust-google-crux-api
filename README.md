@@ -92,7 +92,7 @@ or CLIs that need Core Web Vitals as data.
 
 ## Prerequisites
 
-The CrUX API needs an API key (or an OAuth 2.0 access token):
+The CrUX API needs an API key:
 
 1. Open the [Google Cloud console](https://console.cloud.google.com/) and select or create a project.
 2. Enable the **Chrome UX Report API** under *APIs & Services → Library*.
@@ -100,6 +100,11 @@ The CrUX API needs an API key (or an OAuth 2.0 access token):
    API is recommended.
 
 The same key can be used for the PageSpeed Insights API if that API is enabled in the project too.
+
+`CruxApi::with_access_token` sends an OAuth 2.0 token instead, but Google documents only API keys
+for this API, so a key is recommended. Signing in with the gcloud CLI is not enough on its own: if
+you do use a user token, add `.with_quota_project("my-project")` so Google knows which project's
+quota to use.
 
 ## Installation
 

@@ -56,6 +56,7 @@ pub struct CruxApi {
     credential: Credential,
     base_url: String,
     client: reqwest::Client,
+    quota_project: Option<String>,
 }
 
 impl CruxApi {
@@ -65,6 +66,11 @@ impl CruxApi {
     }
 
     /// Client that sends an OAuth 2.0 access token in the `Authorization` header.
+    ///
+    /// An API key ([`with_api_key`](Self::with_api_key)) is the documented and
+    /// recommended way to call the CrUX API; its discovery document defines no
+    /// OAuth scopes. With a user token, also call
+    /// [`with_quota_project`](Self::with_quota_project).
     pub fn with_access_token<T: Into<String>>(token: T) -> Self {
         Self::new(Credential::AccessToken(token.into()))
     }
@@ -74,7 +80,17 @@ impl CruxApi {
             credential,
             base_url: DEFAULT_BASE_URL.to_string(),
             client: reqwest::Client::new(),
+            quota_project: None,
         }
+    }
+
+    /// Sends `x-goog-user-project`, the project whose quota is used. Needed with
+    /// user credentials (for example from the gcloud CLI), whose OAuth client
+    /// belongs to Google. The project must have the Chrome UX Report API enabled.
+    pub fn with_quota_project<T: Into<String>>(mut self, project: T) -> Self {
+        let project = project.into();
+        self.quota_project = (!project.trim().is_empty()).then_some(project);
+        self
     }
 
     /// Uses the given HTTP client, for example one with a timeout or a proxy.
@@ -178,6 +194,9 @@ impl CruxApi {
             .json(body);
         if let Credential::AccessToken(token) = &self.credential {
             builder = builder.bearer_auth(token);
+        }
+        if let Some(project) = &self.quota_project {
+            builder = builder.header("x-goog-user-project", project);
         }
         let response = builder
             .send()
