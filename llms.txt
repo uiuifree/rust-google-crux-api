@@ -1,16 +1,32 @@
 # google-crux-api
 
-> Async Rust client for the Chrome UX Report (CrUX) API. Returns Core Web Vitals field data (p75 and histograms of LCP, INP, CLS, FCP, TTFB and more) for an origin or URL, as the latest 28-day aggregate or as a weekly history of up to 40 periods.
+> Async Rust client for the Chrome UX Report (CrUX) API. Returns Core Web Vitals field data from real Chrome users (p75, histograms and ratings of LCP, INP, CLS, FCP, TTFB and more) for an origin or URL, as the latest 28-day aggregate or as a weekly history of up to 40 periods. Fast (no Lighthouse run). Requires an API key.
 
-Crate name: `google-crux-api`. Public items: `CruxApi::{with_api_key, with_access_token, with_client, with_base_url, query_record, query_history_record, query_record_raw, query_history_record_raw}`; `QueryRecordRequest` / `QueryHistoryRequest` with `origin`, `url`, `form_factor`, `metric`, `metrics` (and `effective_connection_type` / `collection_period_count`); `FormFactor`, `EffectiveConnectionType`, `Target`; `Record::{metric, p75, core_web_vitals}`; `HistoryRecord::{metric, p75_series}`; `CoreWebVitals::passes`; `metric` module with name constants, `thresholds` and `rate`; `GoogleApiError` with `is_not_found()` for 404 (no data). An API key is required.
+Crate name: `google-crux-api` (import as `google_crux_api`). MSRV 1.88, Tokio, reqwest with rustls.
+
+Public items:
+
+- `CruxApi::{with_api_key, with_access_token, with_client, with_base_url}`; `query_record(&QueryRecordRequest) -> Result<QueryRecordResponse, GoogleApiError>`; `query_history_record(&QueryHistoryRequest) -> Result<QueryHistoryResponse, GoogleApiError>`; `_raw` variants return `serde_json::Value`
+- `QueryRecordRequest::{origin(..), url(..), new(Target)}` with `.form_factor(FormFactor)`, `.effective_connection_type(..)`, `.metric(..)`, `.metrics(..)`
+- `QueryHistoryRequest::{origin(..), url(..), new(Target)}` with `.form_factor(..)`, `.metric(..)`, `.metrics(..)`, `.collection_period_count(1..=40)`
+- `FormFactor::{Phone, Desktop, Tablet, AllFormFactors}`; `EffectiveConnectionType::{FourG, ThreeG, TwoG, Slow2G, Offline}`; `Target::{Origin, Url}`
+- `Record { key, metrics, collection_period }` with `metric(name)`, `p75(name)`, `core_web_vitals()`
+- `CoreWebVitals { lcp, inp, cls, fcp, ttfb }` each `Option<MetricSummary { p75, rating, good, needs_improvement, poor }>`; `passes() -> Option<bool>`
+- `HistoryRecord { key, metrics, collection_periods }` with `p75_series(name) -> Vec<(CollectionPeriod, Option<f64>)>`
+- `metric` module: name constants (`LARGEST_CONTENTFUL_PAINT`, `INTERACTION_TO_NEXT_PAINT`, `CUMULATIVE_LAYOUT_SHIFT`, `FIRST_CONTENTFUL_PAINT`, `EXPERIMENTAL_TIME_TO_FIRST_BYTE`, `ROUND_TRIP_TIME`, `NAVIGATION_TYPES`, `FORM_FACTORS`, LCP subparts, `CORE_WEB_VITALS`), `thresholds(name)`, `rate(name, p75) -> Option<Rating>`
+- `GoogleApiError::{Connection, JsonParse, HttpStatus(u16, String), InvalidArgument}` with `status()` and `is_not_found()` (404 = no CrUX data, common for low-traffic pages)
+
+All numbers are `Option<f64>`; string CLS values and `"NaN"` history points are converted. All response types implement `Serialize`. For Lighthouse scores and audits use the `google-pagespeed-insights-api` crate.
 
 ## Documentation
 
-- [README](https://github.com/uiuifree/rust-google-crux-api/blob/main/README.md)
+- [README](https://github.com/uiuifree/rust-google-crux-api/blob/main/README.md): usage, thresholds, errors, quota, FAQ
 - [API reference on docs.rs](https://docs.rs/google-crux-api)
-- [examples/query.rs](https://github.com/uiuifree/rust-google-crux-api/blob/main/examples/query.rs)
+- [CHANGELOG](https://github.com/uiuifree/rust-google-crux-api/blob/main/CHANGELOG.md)
+- [examples/query.rs](https://github.com/uiuifree/rust-google-crux-api/blob/main/examples/query.rs): Core Web Vitals summary and LCP history
 
 ## Upstream
 
 - [CrUX API](https://developer.chrome.com/docs/crux/api)
 - [CrUX History API](https://developer.chrome.com/docs/crux/history-api)
+- [REST reference](https://developer.chrome.com/docs/crux/reference/rest)

@@ -15,6 +15,10 @@ pub use response::{
     QueryHistoryResponse, QueryRecordResponse, Record, UrlNormalization,
 };
 
+/// Re-export of `reqwest`, for building a client to pass to
+/// [`CruxApi::with_client`] without adding the dependency yourself.
+pub use reqwest;
+
 use reqwest::Url;
 use serde::de::DeserializeOwned;
 use serde_json::Value;

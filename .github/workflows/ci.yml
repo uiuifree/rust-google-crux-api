@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    # 毎週月曜 03:00 UTC。API のレスポンス形式の変化に気づくため
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
@@ -25,6 +29,12 @@ jobs:
         run: cargo test --all-targets
       - name: Doc tests
         run: cargo test --doc
+      - name: Rustdoc
+        run: cargo doc --no-deps
+        env:
+          RUSTDOCFLAGS: -D warnings
+      - name: Package
+        run: cargo package --allow-dirty
 
   # Cargo.toml の rust-version = "1.88" を保証する
   msrv:
@@ -37,3 +47,20 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Check on MSRV
         run: cargo check
+
+  # 実際の API を叩くテスト。シークレットがない場合（フォークからの PR など）はスキップする
+  live:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    env:
+      CRUX_API_KEY: ${{ secrets.CRUX_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        if: env.CRUX_API_KEY != ''
+      - uses: dtolnay/rust-toolchain@stable
+        if: env.CRUX_API_KEY != ''
+      - uses: Swatinem/rust-cache@v2
+        if: env.CRUX_API_KEY != ''
+      - name: Live tests
+        if: env.CRUX_API_KEY != ''
+        run: cargo test --test live -- --ignored --test-threads 1

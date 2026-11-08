@@ -14,3 +14,14 @@ cargo test --doc
 
 The minimum supported Rust version is declared in `Cargo.toml` (`rust-version`) and
 checked in CI.
+
+## Live tests
+
+`tests/live.rs` calls the real API and is ignored by default. Run it with an API key:
+
+```bash
+CRUX_API_KEY=... cargo test --test live -- --ignored
+```
+
+In CI it runs on pushes to `main`, weekly, and on manual runs when the repository secret
+`CRUX_API_KEY` is set.

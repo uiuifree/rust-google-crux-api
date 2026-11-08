@@ -15,3 +15,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   or an OAuth access token.
 - Typed records with lenient number parsing (string CLS values, `"NaN"` in history).
 - Metric name constants, Core Web Vitals thresholds and `Record::core_web_vitals`.
+- Re-export of `reqwest` for `with_client`.
+- Live tests against the real API (`tests/live.rs`, ignored by default) and a weekly CI run.
