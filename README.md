@@ -101,10 +101,8 @@ The CrUX API needs an API key:
 
 The same key can be used for the PageSpeed Insights API if that API is enabled in the project too.
 
-`CruxApi::with_access_token` sends an OAuth 2.0 token instead, but Google documents only API keys
-for this API, so a key is recommended. Signing in with the gcloud CLI is not enough on its own: if
-you do use a user token, add `.with_quota_project("my-project")` so Google knows which project's
-quota to use.
+The API accepts only API keys. OAuth access tokens, including those from `gcloud auth`, are
+rejected with `400 INVALID_ARGUMENT`.
 
 ## Installation
 

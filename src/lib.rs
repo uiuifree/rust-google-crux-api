@@ -25,16 +25,10 @@ use serde_json::Value;
 
 const DEFAULT_BASE_URL: &str = "https://chromeuxreport.googleapis.com/v1";
 
-#[derive(Debug, Clone)]
-enum Credential {
-    ApiKey(String),
-    AccessToken(String),
-}
-
 /// Client for the Chrome UX Report API.
 ///
-/// The API needs credentials: an API key from a Google Cloud project with the
-/// Chrome UX Report API enabled, or an OAuth 2.0 access token.
+/// The API needs an API key from a Google Cloud project with the Chrome UX
+/// Report API enabled. OAuth access tokens are rejected by this API.
 ///
 /// # Example
 ///
@@ -53,44 +47,19 @@ enum Credential {
 /// ```
 #[derive(Debug, Clone)]
 pub struct CruxApi {
-    credential: Credential,
+    api_key: String,
     base_url: String,
     client: reqwest::Client,
-    quota_project: Option<String>,
 }
 
 impl CruxApi {
     /// Client that sends an API key as the `key` query parameter.
     pub fn with_api_key<T: Into<String>>(key: T) -> Self {
-        Self::new(Credential::ApiKey(key.into()))
-    }
-
-    /// Client that sends an OAuth 2.0 access token in the `Authorization` header.
-    ///
-    /// An API key ([`with_api_key`](Self::with_api_key)) is the documented and
-    /// recommended way to call the CrUX API; its discovery document defines no
-    /// OAuth scopes. With a user token, also call
-    /// [`with_quota_project`](Self::with_quota_project).
-    pub fn with_access_token<T: Into<String>>(token: T) -> Self {
-        Self::new(Credential::AccessToken(token.into()))
-    }
-
-    fn new(credential: Credential) -> Self {
         CruxApi {
-            credential,
+            api_key: key.into(),
             base_url: DEFAULT_BASE_URL.to_string(),
             client: reqwest::Client::new(),
-            quota_project: None,
         }
-    }
-
-    /// Sends `x-goog-user-project`, the project whose quota is used. Needed with
-    /// user credentials (for example from the gcloud CLI), whose OAuth client
-    /// belongs to Google. The project must have the Chrome UX Report API enabled.
-    pub fn with_quota_project<T: Into<String>>(mut self, project: T) -> Self {
-        let project = project.into();
-        self.quota_project = (!project.trim().is_empty()).then_some(project);
-        self
     }
 
     /// Uses the given HTTP client, for example one with a timeout or a proxy.
@@ -175,9 +144,7 @@ impl CruxApi {
     fn build_url(&self, method: &str) -> Result<Url, GoogleApiError> {
         let mut url = Url::parse(&format!("{}/{}", self.base_url, method))
             .map_err(|e| GoogleApiError::InvalidArgument(format!("base url: {}", e)))?;
-        if let Credential::ApiKey(key) = &self.credential {
-            url.query_pairs_mut().append_pair("key", key);
-        }
+        url.query_pairs_mut().append_pair("key", &self.api_key);
         Ok(url)
     }
 
@@ -187,18 +154,11 @@ impl CruxApi {
         body: &Value,
     ) -> Result<T, GoogleApiError> {
         let url = self.build_url(method)?;
-        let mut builder = self
+        let response = self
             .client
             .post(url)
             .header(reqwest::header::ACCEPT, "application/json")
-            .json(body);
-        if let Credential::AccessToken(token) = &self.credential {
-            builder = builder.bearer_auth(token);
-        }
-        if let Some(project) = &self.quota_project {
-            builder = builder.header("x-goog-user-project", project);
-        }
-        let response = builder
+            .json(body)
             .send()
             .await
             .map_err(|e| GoogleApiError::Connection(e.to_string()))?;
@@ -227,14 +187,6 @@ mod tests {
             url.as_str(),
             "https://chromeuxreport.googleapis.com/v1/records:queryRecord?key=k"
         );
-    }
-
-    #[test]
-    fn token_is_not_put_in_query() {
-        let url = CruxApi::with_access_token("secret")
-            .build_url("records:queryRecord")
-            .unwrap();
-        assert!(!url.as_str().contains("secret"));
     }
 
     #[test]

@@ -73,13 +73,12 @@ async fn query_history_record_parses_series() {
         .mock_async(|when, then| {
             when.method(POST)
                 .path("/records:queryHistoryRecord")
-                .header("authorization", "Bearer token-1")
                 .json_body(json!({"url": "https://example.com/#top", "collectionPeriodCount": 3}));
             then.status(200).body(HISTORY);
         })
         .await;
 
-    let api = CruxApi::with_access_token("token-1").with_base_url(server.base_url());
+    let api = CruxApi::with_api_key("k").with_base_url(server.base_url());
     let response = api
         .query_history_record(
             &QueryHistoryRequest::url("https://example.com/#top").collection_period_count(3),
@@ -202,25 +201,4 @@ fn passes_ignores_missing_inp() {
 
     let empty = google_crux_api::Record::default();
     assert_eq!(empty.core_web_vitals().passes(), None);
-}
-
-#[tokio::test]
-async fn sends_quota_project() {
-    let server = MockServer::start_async().await;
-    let mock = server
-        .mock_async(|when, then| {
-            when.method(POST)
-                .path("/records:queryRecord")
-                .query_param("key", "k")
-                .header("x-goog-user-project", "my-project");
-            then.status(200).body(RECORD);
-        })
-        .await;
-    let api = CruxApi::with_api_key("k")
-        .with_quota_project("my-project")
-        .with_base_url(server.base_url());
-    api.query_record(&QueryRecordRequest::origin("https://example.com"))
-        .await
-        .unwrap();
-    mock.assert_async().await;
 }

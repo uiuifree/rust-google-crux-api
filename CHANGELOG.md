@@ -7,20 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+### Removed
 
-- `with_quota_project` sends `x-goog-user-project`.
-
-### Changed
-
-- Documentation recommends API keys; the CrUX API defines no OAuth scopes.
+- `with_access_token`. The CrUX API rejects OAuth access tokens (tested with gcloud user
+  credentials, with and without a quota project), so only API keys are supported.
 
 ## [0.1.0]
 
 ### Added
 
-- `CruxApi::query_record` and `query_history_record`, with `_raw` variants, using an API key
-  or an OAuth access token.
+- `CruxApi::query_record` and `query_history_record`, with `_raw` variants, using an API key.
 - Typed records with lenient number parsing (string CLS values, `"NaN"` in history).
 - Metric name constants, Core Web Vitals thresholds and `Record::core_web_vitals`.
 - Re-export of `reqwest` for `with_client`.
