@@ -1,0 +1,16 @@
+# google-crux-api
+
+> Async Rust client for the Chrome UX Report (CrUX) API. Returns Core Web Vitals field data (p75 and histograms of LCP, INP, CLS, FCP, TTFB and more) for an origin or URL, as the latest 28-day aggregate or as a weekly history of up to 40 periods.
+
+Crate name: `google-crux-api`. Public items: `CruxApi::{with_api_key, with_access_token, with_client, with_base_url, query_record, query_history_record, query_record_raw, query_history_record_raw}`; `QueryRecordRequest` / `QueryHistoryRequest` with `origin`, `url`, `form_factor`, `metric`, `metrics` (and `effective_connection_type` / `collection_period_count`); `FormFactor`, `EffectiveConnectionType`, `Target`; `Record::{metric, p75, core_web_vitals}`; `HistoryRecord::{metric, p75_series}`; `CoreWebVitals::passes`; `metric` module with name constants, `thresholds` and `rate`; `GoogleApiError` with `is_not_found()` for 404 (no data). An API key is required.
+
+## Documentation
+
+- [README](https://github.com/uiuifree/rust-google-crux-api/blob/main/README.md)
+- [API reference on docs.rs](https://docs.rs/google-crux-api)
+- [examples/query.rs](https://github.com/uiuifree/rust-google-crux-api/blob/main/examples/query.rs)
+
+## Upstream
+
+- [CrUX API](https://developer.chrome.com/docs/crux/api)
+- [CrUX History API](https://developer.chrome.com/docs/crux/history-api)

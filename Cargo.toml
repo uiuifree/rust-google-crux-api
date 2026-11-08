@@ -1,0 +1,29 @@
+[package]
+name = "google-crux-api"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.88"
+
+authors = ["uiuifree"]
+description = "Async Rust client for the Chrome UX Report (CrUX) API: Core Web Vitals field data (LCP, INP, CLS, TTFB) for a URL or origin, current and as a weekly history"
+license = "MIT"
+readme = "README.md"
+
+# crates.io allows at most 5 keywords and 5 categories.
+keywords = ["crux", "core-web-vitals", "web-vitals", "seo", "google"]
+categories = ["api-bindings", "web-programming", "asynchronous"]
+
+homepage = "https://github.com/uiuifree/rust-google-crux-api"
+repository = "https://github.com/uiuifree/rust-google-crux-api"
+documentation = "https://docs.rs/google-crux-api"
+
+exclude = [".github/", ".idea/", ".claude/"]
+
+[dependencies]
+reqwest = { version = "0.13", features = ["json"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[dev-dependencies]
+tokio = { version = "1.48", features = ["full"] }
+httpmock = "0.7"
