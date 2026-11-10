@@ -14,13 +14,13 @@ Public items:
 - `CoreWebVitals { lcp, inp, cls, fcp, ttfb }` each `Option<MetricSummary { p75, rating, good, needs_improvement, poor }>`; `passes() -> Option<bool>`
 - `HistoryRecord { key, metrics, collection_periods }` with `p75_series(name) -> Vec<(CollectionPeriod, Option<f64>)>`
 - `metric` module: name constants (`LARGEST_CONTENTFUL_PAINT`, `INTERACTION_TO_NEXT_PAINT`, `CUMULATIVE_LAYOUT_SHIFT`, `FIRST_CONTENTFUL_PAINT`, `EXPERIMENTAL_TIME_TO_FIRST_BYTE`, `ROUND_TRIP_TIME`, `NAVIGATION_TYPES`, `FORM_FACTORS`, LCP subparts, `CORE_WEB_VITALS`), `thresholds(name)`, `rate(name, p75) -> Option<Rating>`
-- `GoogleApiError::{Connection, JsonParse, HttpStatus(u16, String), InvalidArgument}` with `status()` and `is_not_found()` (404 = no CrUX data, common for low-traffic pages)
+- `GoogleApiError::{Connection(reqwest::Error), JsonParse(serde_json::Error), HttpStatus(u16, String), InvalidArgument(String)}` with `status()`, `is_not_found()` (404 = no CrUX data, common for low-traffic pages), `is_timeout()` and `reason()`
 
-All numbers are `Option<f64>`; string CLS values and `"NaN"` history points are converted. All response types implement `Serialize`. For Lighthouse scores and audits use the `google-pagespeed-insights-api` crate.
+All numbers are `Option<f64>`; string CLS values and `"NaN"` history points are converted. All response types implement `Serialize`.
 
 ## Documentation
 
-- [README](https://github.com/uiuifree/rust-google-crux-api/blob/main/README.md): usage, thresholds, errors, quota, FAQ
+- [README](https://github.com/uiuifree/rust-google-crux-api/blob/main/README.md): usage, thresholds, errors, quota
 - [API reference on docs.rs](https://docs.rs/google-crux-api)
 - [CHANGELOG](https://github.com/uiuifree/rust-google-crux-api/blob/main/CHANGELOG.md)
 - [examples/query.rs](https://github.com/uiuifree/rust-google-crux-api/blob/main/examples/query.rs): Core Web Vitals summary and LCP history
@@ -29,4 +29,3 @@ All numbers are `Option<f64>`; string CLS values and `"NaN"` history points are 
 
 - [CrUX API](https://developer.chrome.com/docs/crux/api)
 - [CrUX History API](https://developer.chrome.com/docs/crux/history-api)
-- [REST reference](https://developer.chrome.com/docs/crux/reference/rest)

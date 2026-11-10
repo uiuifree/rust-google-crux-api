@@ -5,7 +5,7 @@
 //! CRUX_API_KEY=... cargo run --example query -- https://example.com/page   # page
 //! ```
 
-use google_crux_api::{metric, CruxApi, QueryHistoryRequest, QueryRecordRequest, Target};
+use google_crux_api::{CruxApi, QueryHistoryRequest, QueryRecordRequest, Target, metric};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

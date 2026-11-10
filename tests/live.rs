@@ -53,10 +53,12 @@ async fn query_record_with_filters() {
     for name in metric::CORE_WEB_VITALS {
         assert!(response.record.metric(name).is_some(), "{name}");
     }
-    assert!(response
-        .record
-        .metric(metric::FIRST_CONTENTFUL_PAINT)
-        .is_none());
+    assert!(
+        response
+            .record
+            .metric(metric::FIRST_CONTENTFUL_PAINT)
+            .is_none()
+    );
 }
 
 #[tokio::test]

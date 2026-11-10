@@ -4,6 +4,7 @@ use serde_json::{Map, Value};
 /// Device class (`formFactor`). When not set, the API aggregates all devices.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[non_exhaustive]
 pub enum FormFactor {
     /// All devices together. Same as not setting a form factor.
     AllFormFactors,
@@ -30,6 +31,7 @@ impl FormFactor {
 /// Network class (`effectiveConnectionType`). Only accepted by
 /// [`query_record`](crate::CruxApi::query_record), not by the history API.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum EffectiveConnectionType {
     /// `4G`
     #[serde(rename = "4G")]
@@ -63,6 +65,7 @@ impl EffectiveConnectionType {
 
 /// Whether a request targets a whole origin or a single page.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum Target {
     /// An origin such as `https://example.com` (scheme and host, no path).
     Origin(String),
@@ -291,14 +294,14 @@ impl QueryHistoryRequest {
 
     pub(crate) fn validate(&self) -> Result<(), String> {
         self.target.validate()?;
-        if let Some(count) = self.collection_period_count {
-            if count == 0 || count > Self::MAX_COLLECTION_PERIOD_COUNT {
-                return Err(format!(
-                    "collection_period_count must be between 1 and {}: {}",
-                    Self::MAX_COLLECTION_PERIOD_COUNT,
-                    count
-                ));
-            }
+        if let Some(count) = self.collection_period_count
+            && (count == 0 || count > Self::MAX_COLLECTION_PERIOD_COUNT)
+        {
+            return Err(format!(
+                "collection_period_count must be between 1 and {}: {}",
+                Self::MAX_COLLECTION_PERIOD_COUNT,
+                count
+            ));
         }
         Ok(())
     }

@@ -6,6 +6,7 @@
 
 use crate::metric::{self, Rating};
 use crate::request::{EffectiveConnectionType, FormFactor};
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use std::collections::BTreeMap;
@@ -24,6 +25,13 @@ fn de_opt_f64<'de, D: Deserializer<'de>>(d: D) -> Result<Option<f64>, D::Error> 
     Ok(value.as_ref().and_then(lenient_f64))
 }
 
+fn de_opt_known<'de, D: Deserializer<'de>, T: DeserializeOwned>(
+    d: D,
+) -> Result<Option<T>, D::Error> {
+    let value = Option::<Value>::deserialize(d)?;
+    Ok(value.and_then(|v| serde_json::from_value(v).ok()))
+}
+
 fn de_vec_opt_f64<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<Option<f64>>, D::Error> {
     let values = Option::<Vec<Value>>::deserialize(d)?.unwrap_or_default();
     Ok(values.iter().map(lenient_f64).collect())
@@ -40,6 +48,7 @@ fn de_map_f64<'de, D: Deserializer<'de>>(d: D) -> Result<BTreeMap<String, f64>, 
 /// Response of `records:queryRecord`.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct QueryRecordResponse {
     /// The data.
     #[serde(default)]
@@ -51,6 +60,7 @@ pub struct QueryRecordResponse {
 /// Response of `records:queryHistoryRecord`.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct QueryHistoryResponse {
     /// The data.
     #[serde(default)]
@@ -59,10 +69,11 @@ pub struct QueryHistoryResponse {
     pub url_normalization_details: Option<UrlNormalization>,
 }
 
-/// How the API changed the requested URL (for example removed a fragment or
-/// followed a known redirect).
+/// How the API changed the requested URL (for example removed a fragment).
+/// Redirects are not followed.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct UrlNormalization {
     /// The URL in the request.
     pub original_url: Option<String>,
@@ -73,14 +84,19 @@ pub struct UrlNormalization {
 /// What the data is about.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct Key {
     /// Set for origin queries.
     pub origin: Option<String>,
     /// Set for URL queries.
     pub url: Option<String>,
-    /// Set when the request had a form factor.
+    /// Set when the request had a form factor. `None` for a value this crate
+    /// does not know.
+    #[serde(default, deserialize_with = "de_opt_known")]
     pub form_factor: Option<FormFactor>,
     /// Set when the request had a connection type (current record only).
+    /// `None` for a value this crate does not know.
+    #[serde(default, deserialize_with = "de_opt_known")]
     pub effective_connection_type: Option<EffectiveConnectionType>,
 }
 
@@ -107,6 +123,7 @@ impl Display for Date {
 /// The 28 days the data covers.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct CollectionPeriod {
     /// First day, inclusive.
     pub first_date: Date,
@@ -117,6 +134,7 @@ pub struct CollectionPeriod {
 /// The latest 28-day aggregate.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct Record {
     /// What the data is about.
     #[serde(default)]
@@ -147,6 +165,7 @@ impl Record {
 /// [`FORM_FACTORS`](crate::metric::FORM_FACTORS), ...) only have `fractions`,
 /// and the LCP subparts only have `percentiles`.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct Metric {
     /// Buckets with the share of page loads in each.
     #[serde(default)]
@@ -167,6 +186,7 @@ impl Metric {
 
 /// One histogram bucket.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct Bin {
     /// Lower bound, inclusive.
     #[serde(default, deserialize_with = "de_opt_f64")]
@@ -181,6 +201,7 @@ pub struct Bin {
 
 /// Percentiles of a metric.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct Percentiles {
     /// 75th percentile.
     #[serde(default, deserialize_with = "de_opt_f64")]
@@ -190,6 +211,7 @@ pub struct Percentiles {
 /// A weekly series of 28-day aggregates.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct HistoryRecord {
     /// What the data is about.
     #[serde(default)]
@@ -251,6 +273,7 @@ impl HistoryRecord {
 /// One metric of a [`HistoryRecord`].
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct MetricTimeseries {
     /// Buckets with the share of page loads in each period.
     #[serde(default)]
@@ -264,6 +287,7 @@ pub struct MetricTimeseries {
 
 /// One histogram bucket over time.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct TimeseriesBin {
     /// Lower bound, inclusive.
     #[serde(default, deserialize_with = "de_opt_f64")]
@@ -278,6 +302,7 @@ pub struct TimeseriesBin {
 
 /// Percentiles over time.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct TimeseriesPercentiles {
     /// 75th percentile for each period.
     #[serde(default, deserialize_with = "de_vec_opt_f64")]
@@ -286,6 +311,7 @@ pub struct TimeseriesPercentiles {
 
 /// Fractions of one label over time.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct FractionTimeseries {
     /// Share for each period.
     #[serde(default, deserialize_with = "de_vec_opt_f64")]
@@ -295,6 +321,7 @@ pub struct FractionTimeseries {
 /// A metric's 75th percentile with its rating and the share of page loads
 /// that were good, needed improvement, or were poor.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct MetricSummary {
     /// 75th percentile.
     pub p75: f64,
@@ -324,6 +351,7 @@ impl MetricSummary {
 
 /// Core Web Vitals and related metrics of a [`Record`] in one flat struct.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct CoreWebVitals {
     /// Largest Contentful Paint, milliseconds.
     pub lcp: Option<MetricSummary>,
@@ -338,17 +366,16 @@ pub struct CoreWebVitals {
 }
 
 impl CoreWebVitals {
-    /// Whether the page passes the Core Web Vitals assessment: every Core Web
-    /// Vital that has data is good. `None` when LCP and CLS both have no data.
+    /// Whether the page passes the Core Web Vitals assessment: LCP, CLS and,
+    /// when it has data, INP are all good. `None` unless both LCP and CLS have
+    /// data, so a request limited to other metrics gives `None`.
     ///
     /// INP is left out when it has no data, as Google does for pages with
     /// few interactions.
     pub fn passes(&self) -> Option<bool> {
-        if self.lcp.is_none() && self.cls.is_none() {
-            return None;
-        }
+        let (lcp, cls) = (self.lcp?, self.cls?);
         Some(
-            [self.lcp, self.inp, self.cls]
+            [Some(lcp), self.inp, Some(cls)]
                 .iter()
                 .flatten()
                 .all(|m| m.rating == Some(Rating::Good)),

@@ -46,6 +46,7 @@ pub const CORE_WEB_VITALS: [&str; 3] = [
 /// Assessment of a 75th percentile value against the published thresholds.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum Rating {
     /// Good.
     Good,

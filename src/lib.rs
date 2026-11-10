@@ -22,8 +22,11 @@ pub use reqwest;
 use reqwest::Url;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
+use std::fmt::{Debug, Formatter};
+use std::time::Duration;
 
 const DEFAULT_BASE_URL: &str = "https://chromeuxreport.googleapis.com/v1";
+const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// Client for the Chrome UX Report API.
 ///
@@ -45,26 +48,41 @@ const DEFAULT_BASE_URL: &str = "https://chromeuxreport.googleapis.com/v1";
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct CruxApi {
     api_key: String,
     base_url: String,
     client: reqwest::Client,
+    timeout: Option<Duration>,
+}
+
+impl Debug for CruxApi {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CruxApi")
+            .field("api_key", &"<redacted>")
+            .field("base_url", &self.base_url)
+            .field("timeout", &self.timeout)
+            .finish_non_exhaustive()
+    }
 }
 
 impl CruxApi {
-    /// Client that sends an API key as the `key` query parameter.
+    /// Client that sends an API key in the `X-Goog-Api-Key` header.
+    /// Requests time out after 30 seconds.
     pub fn with_api_key<T: Into<String>>(key: T) -> Self {
         CruxApi {
             api_key: key.into(),
             base_url: DEFAULT_BASE_URL.to_string(),
             client: reqwest::Client::new(),
+            timeout: Some(DEFAULT_TIMEOUT),
         }
     }
 
-    /// Uses the given HTTP client, for example one with a timeout or a proxy.
+    /// Uses the given HTTP client, for example one with a proxy. The 30 second
+    /// default no longer applies, so set a timeout on the client if you want one.
     pub fn with_client(mut self, client: reqwest::Client) -> Self {
         self.client = client;
+        self.timeout = None;
         self
     }
 
@@ -84,7 +102,8 @@ impl CruxApi {
     ///   invalid requests, credentials or quota.
     /// * [`GoogleApiError::InvalidArgument`] when the URL or origin does not
     ///   start with `http://` or `https://`.
-    /// * [`GoogleApiError::Connection`] / [`GoogleApiError::JsonParse`].
+    /// * [`GoogleApiError::Connection`] on a network failure or timeout, or
+    ///   [`GoogleApiError::JsonParse`] when the body is not the expected JSON.
     pub async fn query_record(
         &self,
         request: &QueryRecordRequest,
@@ -142,10 +161,8 @@ impl CruxApi {
     }
 
     fn build_url(&self, method: &str) -> Result<Url, GoogleApiError> {
-        let mut url = Url::parse(&format!("{}/{}", self.base_url, method))
-            .map_err(|e| GoogleApiError::InvalidArgument(format!("base url: {}", e)))?;
-        url.query_pairs_mut().append_pair("key", &self.api_key);
-        Ok(url)
+        Url::parse(&format!("{}/{}", self.base_url, method))
+            .map_err(|e| GoogleApiError::InvalidArgument(format!("base url: {}", e)))
     }
 
     async fn post<T: DeserializeOwned>(
@@ -154,23 +171,22 @@ impl CruxApi {
         body: &Value,
     ) -> Result<T, GoogleApiError> {
         let url = self.build_url(method)?;
-        let response = self
+        let mut request = self
             .client
             .post(url)
+            .header("x-goog-api-key", &self.api_key)
             .header(reqwest::header::ACCEPT, "application/json")
-            .json(body)
-            .send()
-            .await
-            .map_err(|e| GoogleApiError::Connection(e.to_string()))?;
+            .json(body);
+        if let Some(timeout) = self.timeout {
+            request = request.timeout(timeout);
+        }
+        let response = request.send().await.map_err(GoogleApiError::Connection)?;
         let status = response.status();
-        let text = response
-            .text()
-            .await
-            .map_err(|e| GoogleApiError::Connection(e.to_string()))?;
+        let text = response.text().await.map_err(GoogleApiError::Connection)?;
         if !status.is_success() {
             return Err(GoogleApiError::HttpStatus(status.as_u16(), text));
         }
-        serde_json::from_str(&text).map_err(|e| GoogleApiError::JsonParse(e.to_string()))
+        serde_json::from_str(&text).map_err(GoogleApiError::JsonParse)
     }
 }
 
@@ -179,13 +195,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn api_key_goes_to_query() {
+    fn api_key_stays_out_of_the_url() {
         let url = CruxApi::with_api_key("k")
             .build_url("records:queryRecord")
             .unwrap();
         assert_eq!(
             url.as_str(),
-            "https://chromeuxreport.googleapis.com/v1/records:queryRecord?key=k"
+            "https://chromeuxreport.googleapis.com/v1/records:queryRecord"
         );
     }
 
